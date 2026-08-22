@@ -1,3 +1,8 @@
 Django>=5.2,<6
 djangorestframework>=3.16,<4
 django-cors-headers>=4.7,<5
+djangorestframework-simplejwt>=5.3,<6
+channels>=4.2,<5
+psycopg[binary]>=3.2,<4
+django-environ>=0.11,<1
+httpx>=0.28,<1
