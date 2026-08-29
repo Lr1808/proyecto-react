@@ -20,6 +20,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(DEBUG=(bool, True))
 env.read_env(BASE_DIR / ".env")
 
+# Supabase / PostgreSQL connection configuration.
+# If DATABASE_URL is not set, the project keeps using SQLite for local development.
+DATABASE_URL = env("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -83,12 +87,7 @@ ASGI_APPLICATION = "config.asgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    "default": env.db(
-        "DATABASE_URL",
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-    )
-}
+DATABASES = {"default": env.db("DATABASE_URL", default=DATABASE_URL)}
 
 
 # Password validation

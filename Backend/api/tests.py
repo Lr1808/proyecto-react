@@ -32,6 +32,11 @@ class CodeGradeApiTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertIn("access", response.data)
 
+	def test_health_endpoint_is_public(self):
+		response = self.client.get("/api/health/")
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.data["status"], "ok")
+
 	def test_student_cannot_see_hidden_expected_output(self):
 		self.client.force_authenticate(self.student)
 		response = self.client.get(f"/api/exercises/{self.exercise.id}/")
