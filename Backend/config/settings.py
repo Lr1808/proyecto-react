@@ -17,18 +17,24 @@ import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-env = environ.Env(DEBUG=(bool, False))
+env = environ.Env(DEBUG=(bool, True))
 env.read_env(BASE_DIR / ".env")
 
-# Supabase / PostgreSQL configuration.
-# If DATABASE_URL is not set, the project stays compatible with SQLite for local development.
-DATABASE_URL = env("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
+# PostgreSQL / Supabase only.
+DATABASE_URL = env("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL must be configured for Supabase PostgreSQL.")
 
-# Security configuration.
+# Quick-start development settings - unsuitable for production
+# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+
+# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env("SECRET_KEY", default="django-insecure-development-key-change-this-1234567890")
-DEBUG = env("DEBUG", default=False)
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "testserver"])
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = env("DEBUG", default=True)
+
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
 
 
 # Application definition
@@ -81,7 +87,7 @@ ASGI_APPLICATION = "config.asgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {"default": env.db("DATABASE_URL", default=DATABASE_URL)}
+DATABASES = {"default": env.db("DATABASE_URL")}
 
 
 # Password validation
@@ -150,15 +156,10 @@ JUDGE0_URL = env("JUDGE0_URL", default="https://judge0-ce.p.rapidapi.com")
 JUDGE0_API_KEY = env("JUDGE0_API_KEY", default="")
 JUDGE0_API_HOST = env("JUDGE0_API_HOST", default="judge0-ce.p.rapidapi.com")
 
-CORS_ALLOWED_ORIGINS = env.list(
-    "CORS_ALLOWED_ORIGINS",
-    default=["http://localhost:5173", "http://127.0.0.1:5173"],
-)
-
-CSRF_TRUSTED_ORIGINS = env.list(
-    "CSRF_TRUSTED_ORIGINS",
-    default=["http://localhost:5173", "http://127.0.0.1:5173"],
-)
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
 
 SUPABASE_URL = env("SUPABASE_URL", default="")
 SUPABASE_PUBLISHABLE_KEY = env("SUPABASE_PUBLISHABLE_KEY", default="")

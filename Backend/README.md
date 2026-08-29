@@ -12,7 +12,7 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-El proyecto usa SQLite por defecto para desarrollo local. Para PostgreSQL/Supabase, cambia `DATABASE_URL` en `.env` con la cadena de conexión que te da Supabase:
+El proyecto está configurado para PostgreSQL/Supabase. Usa la cadena de conexión que te da Supabase en `.env`:
 
 ```env
 DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT_REF.supabase.co:5432/postgres?sslmode=require
