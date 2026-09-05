@@ -38,6 +38,28 @@ class User(AbstractBaseUser, PermissionsMixin):
 		return self.email
 
 
+class Course(models.Model):
+	code = models.CharField(max_length=20, unique=True)
+	name = models.CharField(max_length=150)
+	description = models.TextField(blank=True)
+	teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name="courses_taught")
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	def __str__(self):
+		return f"{self.code} - {self.name}"
+
+
+class CourseMembership(models.Model):
+	course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="memberships")
+	student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="course_memberships")
+	joined_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		constraints = [
+			models.UniqueConstraint(fields=["course", "student"], name="unique_course_student")
+		]
+
+
 class Exercise(models.Model):
 	class Difficulty(models.TextChoices):
 		EASY = "easy", "Easy"
@@ -62,10 +84,32 @@ class TestCase(models.Model):
 	input_data = models.TextField(blank=True)
 	expected_output = models.TextField()
 	is_hidden = models.BooleanField(default=False)
+	order = models.PositiveIntegerField(default=0)
+
+	class Meta:
+		ordering = ["order", "id"]
+
+
+class Assignment(models.Model):
+	course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="assignments")
+	exercise = models.ForeignKey(Exercise, on_delete=models.CASCADE, related_name="assignments")
+	title = models.CharField(max_length=200)
+	starts_at = models.DateTimeField(null=True, blank=True)
+	due_at = models.DateTimeField(null=True, blank=True)
+	time_limit_minutes = models.PositiveIntegerField(null=True, blank=True)
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		constraints = [
+			models.UniqueConstraint(fields=["course", "exercise"], name="unique_course_exercise_assignment")
+		]
 
 
 class Submission(models.Model):
 	class Status(models.TextChoices):
+		PENDING = "PENDING", "Pending"
+		PASSED = "PASSED", "Passed"
+		FAILED = "FAILED", "Failed"
 		ACCEPTED = "ACCEPTED", "Accepted"
 		WRONG_ANSWER = "WRONG_ANSWER", "Wrong answer"
 		TIME_LIMIT_EXCEEDED = "TIME_LIMIT_EXCEEDED", "Time limit exceeded"
@@ -78,6 +122,17 @@ class Submission(models.Model):
 	execution_time = models.FloatField(null=True, blank=True)
 	score = models.FloatField(default=0)
 	submitted_at = models.DateTimeField(auto_now_add=True)
+	error_message = models.TextField(blank=True)
+
+
+class SubmissionTestResult(models.Model):
+	submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name="test_results")
+	test_case = models.ForeignKey(TestCase, on_delete=models.CASCADE, related_name="submission_results")
+	passed = models.BooleanField(default=False)
+	status = models.CharField(max_length=30)
+	actual_output = models.TextField(blank=True)
+	execution_time = models.FloatField(null=True, blank=True)
+	error_message = models.TextField(blank=True)
 
 
 class ChatMessage(models.Model):
