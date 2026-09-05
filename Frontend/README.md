@@ -1,6 +1,27 @@
-# React + Vite
+# CodeGrade Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Interfaz React para explorar retos de programación, filtrar por lenguaje y resolverlos desde un workspace con editor Monaco.
+
+## Arranque
+
+Desde la raíz del proyecto:
+
+```powershell
+cd Frontend
+npm install
+npm run dev
+```
+
+Vite mostrará la URL local, normalmente `http://localhost:5173`.
+
+Para una compilación de producción:
+
+```powershell
+cd Frontend
+npm run build
+```
+
+El catálogo inicial incluye JavaScript, Python, TypeScript, Java y C++. Los casos visibles se muestran en cada reto; los casos ocultos quedan reservados para la evaluación del backend.
 
 Currently, two official plugins are available:
 

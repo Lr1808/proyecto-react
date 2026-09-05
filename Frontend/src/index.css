@@ -1,6 +1,36 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
 
-:root { font-family: 'DM Sans', sans-serif; color: #f3f0e8; background: #101512; }
+:root {
+  font-family: 'DM Sans', sans-serif;
+  color: #f3f0e8;
+  background: #0f172a;
+  color-scheme: dark;
+}
+
 * { box-sizing: border-box; }
-body { min-width: 320px; min-height: 100vh; margin: 0; background: radial-gradient(circle at 85% 12%, #27382b 0, #101512 42%); }
-#root { min-height: 100vh; display: flex; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: #0f172a;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #0f172a inset !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  transition: background-color 5000s ease-in-out 0s;
+  border-color: #334155 !important;
+}
+
+@import "tailwindcss";
