@@ -51,3 +51,8 @@ class CodeGradeApiTests(TestCase):
 		}, format="json")
 		self.assertEqual(response.status_code, 201)
 		self.assertEqual(response.data["test_cases"][0]["expected_output"], "2")
+
+	def test_api_guide_page_is_available(self):
+		response = self.client.get("/api/guide/")
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, "CodeGrade API Guide")

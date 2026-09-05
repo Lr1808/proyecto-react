@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from api.models import Exercise, Submission, User
+from api.models import Exercise, Submission, SubmissionTestResult, User
 from api.serializers import SubmissionSerializer
 from api.services.judge0 import run_test
 
@@ -36,13 +36,13 @@ def submit(request):
     passed = sum(item["passed"] for item in results)
     score = (passed / len(results) * 100) if results else 0
     if any(item["status"] == "TIME_LIMIT_EXCEEDED" for item in results):
-        verdict = Submission.Status.TIME_LIMIT_EXCEEDED
+        verdict = Submission.Status.FAILED
     elif any(item["status"] == "ERROR" for item in results):
-        verdict = Submission.Status.ERROR
+        verdict = Submission.Status.FAILED
     elif passed == len(results):
-        verdict = Submission.Status.ACCEPTED
+        verdict = Submission.Status.PASSED
     else:
-        verdict = Submission.Status.WRONG_ANSWER
+        verdict = Submission.Status.FAILED
     execution_times = [item["execution_time"] for item in results if item["execution_time"] is not None]
     submission = Submission.objects.create(
         exercise=exercise,
@@ -52,4 +52,15 @@ def submit(request):
         execution_time=sum(execution_times) if execution_times else None,
         score=score,
     )
+    SubmissionTestResult.objects.bulk_create([
+        SubmissionTestResult(
+            submission=submission,
+            test_case_id=result["test_case_id"],
+            passed=result["passed"],
+            status=result["status"],
+            actual_output=result.get("output", ""),
+            execution_time=result.get("execution_time"),
+        )
+        for result in results
+    ])
     return Response({"submission": SubmissionSerializer(submission).data, "verdict": verdict, "score": score, "test_results": results})

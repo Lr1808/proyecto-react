@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import ChatMessage, Exercise, Submission, TestCase, User
+from .models import Assignment, ChatMessage, Course, CourseMembership, Exercise, Submission, SubmissionTestResult, TestCase, User
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -65,10 +65,47 @@ class ExerciseReadSerializer(serializers.ModelSerializer):
 
 
 class SubmissionSerializer(serializers.ModelSerializer):
+    test_results = serializers.SerializerMethodField()
+
     class Meta:
         model = Submission
-        fields = ["id", "exercise", "student", "code_submitted", "status", "execution_time", "score", "submitted_at"]
+        fields = ["id", "exercise", "student", "code_submitted", "status", "execution_time", "score", "submitted_at", "error_message", "test_results"]
         read_only_fields = ["id", "student", "status", "execution_time", "score", "submitted_at"]
+
+    def get_test_results(self, instance):
+        return SubmissionTestResultSerializer(instance.test_results.all(), many=True).data
+
+
+class SubmissionTestResultSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubmissionTestResult
+        fields = ["id", "test_case", "passed", "status", "actual_output", "execution_time", "error_message"]
+        read_only_fields = fields
+
+
+class CourseSerializer(serializers.ModelSerializer):
+    teacher = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Course
+        fields = ["id", "code", "name", "description", "teacher", "created_at"]
+        read_only_fields = ["id", "teacher", "created_at"]
+
+
+class AssignmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Assignment
+        fields = ["id", "course", "exercise", "title", "starts_at", "due_at", "time_limit_minutes", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+
+class CourseMembershipSerializer(serializers.ModelSerializer):
+    student = UserSerializer(read_only=True)
+
+    class Meta:
+        model = CourseMembership
+        fields = ["id", "course", "student", "joined_at"]
+        read_only_fields = fields
 
 
 class ChatMessageSerializer(serializers.ModelSerializer):
