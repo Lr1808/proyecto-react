@@ -1,27 +1,14 @@
-# CodeGrade Frontend
+# React + Vite
 
-Interfaz React para explorar retos de programación, filtrar por lenguaje y resolverlos desde un workspace con editor Monaco.
+## Ejecutar con Django y Supabase
 
-## Arranque
+1. Copia `.env.example` a `.env` y completa `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`.
+2. Inicia Django en `http://127.0.0.1:8000`.
+3. Ejecuta `npm run dev`.
 
-Desde la raíz del proyecto:
+El frontend usa Supabase Auth para registro, inicio de sesión, persistencia y renovación de sesión. El `access_token` de Supabase se envía como `Bearer` a Django; Django lo valida con el JWKS configurado y sincroniza el usuario local antes de permitir el acceso a ejercicios, cursos o envíos.
 
-```powershell
-cd Frontend
-npm install
-npm run dev
-```
-
-Vite mostrará la URL local, normalmente `http://localhost:5173`.
-
-Para una compilación de producción:
-
-```powershell
-cd Frontend
-npm run build
-```
-
-El catálogo inicial incluye JavaScript, Python, TypeScript, Java y C++. Los casos visibles se muestran en cada reto; los casos ocultos quedan reservados para la evaluación del backend.
+This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
 Currently, two official plugins are available:
 
