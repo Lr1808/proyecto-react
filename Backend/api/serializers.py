@@ -1,23 +1,12 @@
 from rest_framework import serializers
 
-from .models import Assignment, ChatMessage, Course, CourseMembership, Exercise, Submission, SubmissionTestResult, TestCase, User
-
-
-class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=8)
-
-    class Meta:
-        model = User
-        fields = ["email", "password", "full_name", "role"]
-
-    def create(self, validated_data):
-        return User.objects.create_user(**validated_data)
+from .models import Assignment, ChatMessage, Course, CourseMembership, Exercise, Question, Submission, SubmissionAnswer, SubmissionTestResult, TestCase, User
 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "email", "full_name", "role", "created_at"]
+        fields = ["id", "email", "full_name", "role", "learning_level", "created_at"]
         read_only_fields = fields
 
 
@@ -40,36 +29,73 @@ class TestCaseReadSerializer(serializers.ModelSerializer):
         return data
 
 
+class QuestionWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Question
+        fields = [
+            "question_text", "question_type", "options", "correct_answer", "code_language_id",
+            "test_cases", "points", "explanation", "order",
+        ]
+
+
+class QuestionReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Question
+        fields = ["id", "question_text", "question_type", "options", "code_language_id", "test_cases", "points", "order"]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        if getattr(request, "user", None) and getattr(request.user, "role", None) == User.Role.STUDENT:
+            data["test_cases"] = [
+                {key: value for key, value in test_case.items() if key != "expected_output"}
+                for test_case in data.get("test_cases", [])
+            ]
+        return data
+
+
 class ExerciseWriteSerializer(serializers.ModelSerializer):
     test_cases = TestCaseWriteSerializer(many=True, required=False)
+    questions = QuestionWriteSerializer(many=True, required=False)
 
     class Meta:
         model = Exercise
-        fields = ["id", "title", "description", "difficulty", "programming_language", "teacher", "created_at", "test_cases"]
+        fields = ["id", "title", "description", "category", "level", "is_exam", "difficulty", "programming_language", "time_limit_minutes", "passing_score", "is_active", "teacher", "created_at", "test_cases", "questions"]
         read_only_fields = ["id", "teacher", "created_at"]
 
     def create(self, validated_data):
         test_cases = validated_data.pop("test_cases", [])
+        questions = validated_data.pop("questions", [])
         exercise = Exercise.objects.create(teacher=self.context["request"].user, **validated_data)
         TestCase.objects.bulk_create([TestCase(exercise=exercise, **case) for case in test_cases])
+        Question.objects.bulk_create([Question(exercise=exercise, **question) for question in questions])
         return exercise
 
 
 class ExerciseReadSerializer(serializers.ModelSerializer):
     teacher = UserSerializer(read_only=True)
     test_cases = TestCaseReadSerializer(many=True, read_only=True)
+    questions = QuestionReadSerializer(many=True, read_only=True)
 
     class Meta:
         model = Exercise
-        fields = ["id", "title", "description", "difficulty", "programming_language", "teacher", "created_at", "test_cases"]
+        fields = ["id", "title", "description", "category", "level", "is_exam", "difficulty", "programming_language", "time_limit_minutes", "passing_score", "is_active", "teacher", "created_at", "test_cases", "questions"]
+
+
+class SubmissionAnswerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubmissionAnswer
+        fields = ["question", "student_answer", "is_correct", "score_awarded", "judge0_output"]
+        read_only_fields = fields
 
 
 class SubmissionSerializer(serializers.ModelSerializer):
     test_results = serializers.SerializerMethodField()
+    answers = SubmissionAnswerSerializer(many=True, read_only=True)
 
     class Meta:
         model = Submission
-        fields = ["id", "exercise", "student", "code_submitted", "status", "execution_time", "score", "submitted_at", "error_message", "test_results"]
+        fields = ["id", "exercise", "student", "code_submitted", "status", "score", "total_score", "max_possible_score", "percentage", "passed", "execution_time", "submitted_at", "error_message", "test_results", "answers"]
         read_only_fields = ["id", "student", "status", "execution_time", "score", "submitted_at"]
 
     def get_test_results(self, instance):

@@ -57,3 +57,35 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             message_text=message_text,
         )
         return {"id": message.id, "sender_id": self.user.id, "receiver_id": receiver.id, "message": message.message_text, "created_at": message.created_at.isoformat()}
+
+
+class NotificationConsumer(AsyncJsonWebsocketConsumer):
+    async def connect(self):
+        self.user = self.scope.get("user")
+        if not self.user or self.user.is_anonymous:
+            await self.close(code=4401)
+            return
+        self.group_name = f"teacher_{self.user.id}" if self.user.role == User.Role.TEACHER else f"student_{self.user.id}"
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        if hasattr(self, "group_name"):
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def submission_completed(self, event):
+        await self.send_json({
+            "type": "submission_completed",
+            "submission_id": event["submission_id"],
+            "exercise_id": event["exercise_id"],
+            "student_id": event["student_id"],
+            "percentage": event["percentage"],
+            "passed": event["passed"],
+        })
+
+    async def exercise_published(self, event):
+        await self.send_json({
+            "type": "exercise_published",
+            "exercise_id": event["exercise_id"],
+            "title": event["title"],
+        })

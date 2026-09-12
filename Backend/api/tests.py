@@ -1,7 +1,7 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from .models import Exercise, TestCase as ExerciseTestCase, User
+from .models import Exercise, Question, TestCase as ExerciseTestCase, User
 
 
 class CodeGradeApiTests(TestCase):
@@ -20,17 +20,6 @@ class CodeGradeApiTests(TestCase):
 		ExerciseTestCase.objects.create(
 			exercise=self.exercise, input_data="1 2", expected_output="3", is_hidden=True
 		)
-
-	def test_register_and_login(self):
-		response = self.client.post("/api/auth/register/", {
-			"email": "new@example.com", "password": "secure-pass-123", "full_name": "New User", "role": "student",
-		}, format="json")
-		self.assertEqual(response.status_code, 201)
-		response = self.client.post("/api/auth/login/", {
-			"email": "new@example.com", "password": "secure-pass-123",
-		}, format="json")
-		self.assertEqual(response.status_code, 200)
-		self.assertIn("access", response.data)
 
 	def test_health_endpoint_is_public(self):
 		response = self.client.get("/api/health/")
@@ -52,7 +41,51 @@ class CodeGradeApiTests(TestCase):
 		self.assertEqual(response.status_code, 201)
 		self.assertEqual(response.data["test_cases"][0]["expected_output"], "2")
 
-	def test_api_guide_page_is_available(self):
-		response = self.client.get("/api/guide/")
-		self.assertEqual(response.status_code, 200)
-		self.assertContains(response, "CodeGrade API Guide")
+	def test_student_can_submit_theory_answers_and_receive_feedback(self):
+		question = Question.objects.create(
+			exercise=self.exercise,
+			question_text="¿Cuánto es 2 + 2?",
+			question_type=Question.QuestionType.NUMERICAL,
+			correct_answer=4,
+			points=2,
+			explanation="La suma de ambos valores es cuatro.",
+		)
+		self.client.force_authenticate(self.student)
+		before = self.client.get(f"/api/exercises/{self.exercise.id}/")
+		self.assertNotIn("correct_answer", before.data["questions"][0])
+		self.assertNotIn("explanation", before.data["questions"][0])
+
+		response = self.client.post(
+			f"/api/exercises/{self.exercise.id}/submit/",
+			{"answers": [{"question_id": question.id, "answer": "4"}]},
+			format="json",
+		)
+		self.assertEqual(response.status_code, 201)
+		self.assertEqual(response.data["percentage"], 100)
+		self.assertTrue(response.data["passed"])
+		self.assertEqual(response.data["feedback"][0]["explanation"], question.explanation)
+
+	def test_student_can_manage_draft_answers_on_same_route(self):
+		self.client.force_authenticate(self.student)
+		initial = self.client.get(f"/api/exercises/{self.exercise.id}/draft/")
+		self.assertEqual(initial.status_code, 200)
+		self.assertEqual(initial.data["answers"], {})
+
+		put_response = self.client.put(
+			f"/api/exercises/{self.exercise.id}/draft/",
+			{"answers": {"1": "respuesta guardada"}},
+			format="json",
+		)
+		self.assertEqual(put_response.status_code, 200)
+		self.assertEqual(put_response.data["answers"], {"1": "respuesta guardada"})
+
+		get_response = self.client.get(f"/api/exercises/{self.exercise.id}/draft/")
+		self.assertEqual(get_response.status_code, 200)
+		self.assertEqual(get_response.data["answers"], {"1": "respuesta guardada"})
+
+		delete_response = self.client.delete(f"/api/exercises/{self.exercise.id}/draft/")
+		self.assertEqual(delete_response.status_code, 204)
+
+		final_response = self.client.get(f"/api/exercises/{self.exercise.id}/draft/")
+		self.assertEqual(final_response.status_code, 200)
+		self.assertEqual(final_response.data["answers"], {})

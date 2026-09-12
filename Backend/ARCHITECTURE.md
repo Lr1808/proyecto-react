@@ -21,9 +21,9 @@ Para producción, el adaptador debe usar una instancia Judge0 administrada o un 
 
 ## API REST
 
-Todas las rutas salvo salud, guía y autenticación requieren JWT Bearer.
+Todas las rutas salvo salud requieren un Bearer de Supabase.
 
-- `POST /api/auth/register/`, `POST /api/auth/login/`, `POST /api/auth/refresh/`, `GET /api/auth/me/`
+- Supabase Auth gestiona registro, login, refresh y logout. Django solo valida el Bearer de Supabase y expone `GET /api/auth/me/` para el perfil local sincronizado.
 - `GET /api/courses/`: listar cursos
 - `POST /api/courses/`: profesor crea curso (`code`, `name`, `description`)
 - `POST /api/courses/{id}/join/`: estudiante se matricula

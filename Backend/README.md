@@ -30,21 +30,28 @@ Configura `JUDGE0_API_KEY` antes de usar `/api/submissions/submit/`.
 
 ```powershell
 python manage.py migrate
-python manage.py createsuperuser
 ```
 
 Si usas Supabase con SSL, asegura que la cadena incluya `?sslmode=require`.
 
 ## API
 
-- `POST /api/auth/register/`: crea usuario y devuelve tokens JWT.
-- `POST /api/auth/login/`: recibe `email` y `password`.
-- `GET /api/auth/me/`: perfil autenticado.
+- Supabase Auth gestiona registro, login, refresh y logout.
+- `GET /api/auth/me/`: perfil autenticado sincronizado en Django.
 - `GET /api/exercises/?difficulty=easy&language=python`: lista ejercicios.
 - `POST /api/exercises/`: crea ejercicio con `test_cases` como profesor.
 - `GET /api/exercises/<id>/`: detalle; un estudiante no recibe soluciones ocultas.
 - `POST /api/submissions/submit/`: recibe `{ "exercise_id": 1, "code": "..." }`.
+- `POST /api/exercises/<id>/submit/`: recibe `{ "answers": [{ "question_id": 1, "answer": "..." }] }` y devuelve nota, estado, desglose y retroalimentación.
+- `GET /api/teacher/metrics/`: KPIs, distribución de notas y preguntas críticas para docentes.
 - `GET /api/health/`: comprobación del servicio.
 
 En HTTP, enviar `Authorization: Bearer <access_token>`.
 Para chat, conectar a `ws://127.0.0.1:8000/ws/chat/<exercise_id>/<target_user_id>/?token=<access_token>` y enviar `{ "message": "..." }`.
+Para notificaciones, conectar a `ws://127.0.0.1:8000/ws/notifications/?token=<access_token>`.
+
+## Supabase Auth
+
+El frontend autentica con Supabase y envía su `access_token` como Bearer. Django valida la firma contra `SUPABASE_JWKS_URL`, comprueba `SUPABASE_JWT_ISSUER` y `SUPABASE_JWT_AUDIENCE`, y enlaza el usuario de Supabase con `api.User.supabase_uid`.
+
+Después de configurar las variables de `.env`, ejecuta `python manage.py migrate` antes de iniciar el servidor.

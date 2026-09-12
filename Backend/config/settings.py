@@ -10,7 +10,6 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-from datetime import timedelta
 from pathlib import Path
 
 import environ
@@ -34,7 +33,7 @@ SECRET_KEY = env("SECRET_KEY", default="django-insecure-development-key-change-t
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env("DEBUG", default=True)
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "testserver"])
 
 
 # Application definition
@@ -134,16 +133,11 @@ AUTH_USER_MODEL = "api.User"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "api.authentication.SupabaseJWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
     ),
-}
-
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=env.int("JWT_ACCESS_MINUTES", default=60)),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=env.int("JWT_REFRESH_DAYS", default=1)),
 }
 
 CHANNEL_LAYERS = {
@@ -157,11 +151,29 @@ JUDGE0_API_KEY = env("JUDGE0_API_KEY", default="")
 JUDGE0_API_HOST = env("JUDGE0_API_HOST", default="judge0-ce.p.rapidapi.com")
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
+    origin.rstrip("/")
+    for origin in env.list(
+        "CORS_ALLOWED_ORIGINS",
+        default=["http://localhost:5173", "http://127.0.0.1:5173"],
+    )
+    if origin.strip()
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.rstrip("/")
+    for origin in env.list(
+        "CSRF_TRUSTED_ORIGINS",
+        default=["http://localhost:5173", "http://127.0.0.1:5173"],
+    )
+    if origin.strip()
 ]
 
 SUPABASE_URL = env("SUPABASE_URL", default="")
 SUPABASE_PUBLISHABLE_KEY = env("SUPABASE_PUBLISHABLE_KEY", default="")
 SUPABASE_SECRET_KEY = env("SUPABASE_SECRET_KEY", default="")
 SUPABASE_JWKS_URL = env("SUPABASE_JWKS_URL", default="")
+SUPABASE_JWT_ISSUER = env("SUPABASE_JWT_ISSUER", default=f"{SUPABASE_URL}/auth/v1")
+SUPABASE_JWT_AUDIENCE = env("SUPABASE_JWT_AUDIENCE", default="authenticated")
+SUPABASE_JWT_ALGORITHMS = tuple(
+    algorithm.strip() for algorithm in env("SUPABASE_JWT_ALGORITHMS", default="ES256,RS256").split(",") if algorithm.strip()
+)

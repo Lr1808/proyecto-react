@@ -2,9 +2,8 @@ from urllib.parse import parse_qs
 
 from channels.db import database_sync_to_async
 from django.contrib.auth.models import AnonymousUser
-from rest_framework_simplejwt.tokens import AccessToken
 
-from api.models import User
+from api.authentication import SupabaseJWTAuthentication
 
 
 class JWTAuthMiddleware:
@@ -24,8 +23,8 @@ class JWTAuthMiddleware:
     @database_sync_to_async
     def get_user(self, token):
         try:
-            access_token = AccessToken(token)
-            return User.objects.get(id=access_token["user_id"], is_active=True)
+            user, _claims = SupabaseJWTAuthentication().authenticate_token(token)
+            return user
         except Exception:
             return AnonymousUser()
 
