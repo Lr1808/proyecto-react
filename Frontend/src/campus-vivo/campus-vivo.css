@@ -1,0 +1,67 @@
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+/* ============ Base con scope (solo dentro de .cv-root) ============ */
+@layer base {
+  .cv-root {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cv-root, .cv-root *, .cv-root *::before, .cv-root *::after {
+    box-sizing: border-box;
+    border-width: 0;
+    border-style: solid;
+  }
+  .cv-root, .cv-root body { line-height: 1.5; }
+  .cv-root h1, .cv-root h2, .cv-root h3, .cv-root h4, .cv-root p, .cv-root ul, .cv-root ol, .cv-root figure {
+    margin: 0;
+  }
+  .cv-root h1, .cv-root h2, .cv-root h3, .cv-root h4 {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+  .cv-root ul, .cv-root ol { padding: 0; list-style: none; }
+  .cv-root img { display: block; max-width: 100%; }
+  .cv-root button { background: transparent; padding: 0; cursor: pointer; text-align: left; }
+  .cv-root input, .cv-root textarea { font-family: inherit; color: inherit; }
+  .cv-root b, .cv-root strong { font-weight: 700; }
+}
+
+/* ============ Microinteracciones y animaciones ============ */
+.cv-screen-in { animation: cv-screen-in .32s cubic-bezier(.22, .8, .3, 1) both; }
+@keyframes cv-screen-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.cv-reaction-pop { animation: cv-reaction-pop .34s cubic-bezier(.22, .8, .3, 1); }
+@keyframes cv-reaction-pop {
+  0% { transform: scale(.9); }
+  55% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+.cv-fly-up { animation: cv-fly-up .9s ease-out forwards; }
+@keyframes cv-fly-up {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-22px); }
+}
+
+.cv-voice { animation: cv-voice 1.6s ease-in-out infinite; }
+@keyframes cv-voice {
+  0%, 100% { transform: scale(1); opacity: .65; }
+  50% { transform: scale(1.45); opacity: .15; }
+}
+
+.cv-bubble-in { animation: cv-bubble-in .25s ease both; }
+@keyframes cv-bubble-in {
+  from { opacity: 0; transform: translateY(8px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.cv-accordion { overflow: hidden; transition: grid-template-rows .3s cubic-bezier(.22, .8, .3, 1); }
+.cv-no-scrollbar { scrollbar-width: none; }
+.cv-no-scrollbar::-webkit-scrollbar { display: none; }
