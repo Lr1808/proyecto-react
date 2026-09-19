@@ -177,3 +177,5 @@ SUPABASE_JWT_AUDIENCE = env("SUPABASE_JWT_AUDIENCE", default="authenticated")
 SUPABASE_JWT_ALGORITHMS = tuple(
     algorithm.strip() for algorithm in env("SUPABASE_JWT_ALGORITHMS", default="ES256,RS256").split(",") if algorithm.strip()
 )
+
+RETRY_COOLDOWN_HOURS = env.float("RETRY_COOLDOWN_HOURS", default=3.0)

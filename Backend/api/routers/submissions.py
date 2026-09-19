@@ -1,4 +1,8 @@
+from datetime import timedelta
+
+from django.conf import settings
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -82,6 +86,19 @@ def submit_exercise(request, exercise_id):
     answers = request.data.get("answers")
     if not isinstance(answers, list):
         return Response({"detail": "answers debe ser una lista."}, status=status.HTTP_400_BAD_REQUEST)
+
+    latest_submission = Submission.objects.filter(
+        exercise=exercise,
+        student=request.user,
+        passed=False,
+    ).order_by("-submitted_at").first()
+    retry_at = latest_submission.submitted_at + timedelta(hours=settings.RETRY_COOLDOWN_HOURS) if latest_submission else None
+    if retry_at and timezone.now() < retry_at:
+        return Response({
+            "detail": "Este ejercicio estará disponible de nuevo cuando termine el tiempo de espera.",
+            "retry_after": retry_at,
+            "remaining_seconds": max(0, int((retry_at - timezone.now()).total_seconds())),
+        }, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
     try:
         submission = evaluate_submission(exercise=exercise, student=request.user, answers=answers)
