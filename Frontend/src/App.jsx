@@ -5,17 +5,20 @@ import Navbar from './components/Navbar'
 import StudentDashboard from './components/StudentDashboard'
 import TeacherDashboard from './components/TeacherDashboard'
 import EduEvalChatbot from './components/EduEvalChatbot'
+import LiveTeacherStudentChat from './components/LiveTeacherStudentChat'
 import ProfilePanel from './components/ProfilePanel'
 import AuthScreen from './components/AuthScreen'
 import OnboardingModal from './components/OnboardingModal'
 import CampusVivo from './campus-vivo/CampusVivo'
+import LandingPage from './components/LandingPage'
+import ClickSpark from './components/ClickSpark'
 import { hasOnboarded } from './lib/gamification'
 
 const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')
 const SKIP_AUTH = import.meta.env.VITE_SKIP_AUTH === 'true'
 const demoAccounts = {
   'student@example.com': { password: 'demo1234', full_name: 'Alumna Demo', role: 'student' },
-  'admin@example.com': { password: 'Admin1234!', full_name: 'Admin Principal', role: 'teacher' },
+  'admin@example.com': { password: 'Admin1234!', full_name: 'Luis', role: 'teacher' },
 }
 
 export default function App() {
@@ -29,6 +32,7 @@ export default function App() {
   const [profileOpen, setProfileOpen] = useState(false)
   const [showDemo, setShowDemo] = useState(() => window.location.hash === '#campus-vivo')
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showLanding, setShowLanding] = useState(true)
   const [progress, setProgress] = useState(null)
   const hasSyncedRole = useRef(false)
 
@@ -89,7 +93,7 @@ export default function App() {
     if (error) throw new Error(error.message)
     setToken(data.session?.access_token || '')
   }
-  const handleSignup = async ({ fullName, email, password }) => {
+  const handleSignup = async ({ fullName, email, password, role: requestedRole = 'student' }) => {
     setAuthError('')
     if (SKIP_AUTH) {
       throw new Error('El registro en modo demo está deshabilitado. Activa VITE_SKIP_AUTH=false para usar Supabase Auth.')
@@ -100,6 +104,7 @@ export default function App() {
       options: {
         data: {
           full_name: fullName,
+          requested_role: requestedRole,
         },
         emailRedirectTo: window.location.origin,
       },
@@ -119,7 +124,8 @@ export default function App() {
     if (error) throw new Error(error.message)
   }
   const handleRoleChange = (nextRole) => {
-    if (!user || nextRole !== user.role) return
+    if (nextRole !== 'student' && nextRole !== 'teacher') return
+    if (!SKIP_AUTH && (!user || nextRole !== user.role)) return
     setRole(nextRole)
   }
 
@@ -133,12 +139,14 @@ export default function App() {
     return () => window.removeEventListener('hashchange', syncDemo)
   }, [])
 
-  if (showDemo) return <CampusVivo />
+  if (showDemo) return <ClickSpark><CampusVivo /></ClickSpark>
 
-  if (checking) return <div className="loading-screen"><div className="brand-mark">✦</div><span>Preparando tu espacio de aprendizaje...</span></div>
-  if (!user) return <AuthScreen demoMode={SKIP_AUTH} onLogin={async (credentials) => { try { await handleLogin(credentials) } catch (error) { setAuthError(error.message) } }} onSignup={async (credentials) => { try { const result = await handleSignup(credentials); if (result === 'check-email') { setAuthError('Revisa tu correo para confirmar la cuenta antes de continuar.') } } catch (error) { setAuthError(error.message) } }} onGoogleLogin={handleGoogleLogin} error={authError} />
+  if (checking) return <ClickSpark><div className="loading-screen"><div className="brand-mark">✦</div><span>Preparando tu espacio de aprendizaje...</span></div></ClickSpark>
+  if (!user && showLanding) return <ClickSpark><LandingPage demoMode={SKIP_AUTH} onEnter={() => setShowLanding(false)} /></ClickSpark>
+  if (!user) return <ClickSpark><AuthScreen demoMode={SKIP_AUTH} onLogin={async (credentials) => { try { await handleLogin(credentials) } catch (error) { setAuthError(error.message) } }} onSignup={async (credentials) => { try { const result = await handleSignup(credentials); if (result === 'check-email') { setAuthError('Revisa tu correo para confirmar la cuenta antes de continuar.') } } catch (error) { setAuthError(error.message) } }} onGoogleLogin={handleGoogleLogin} error={authError} /></ClickSpark>
 
-  return <div className="app-frame"><Navbar user={user} role={role} onRoleChange={handleRoleChange} notifications={notifications} onLogout={handleLogout} onProfile={() => setProfileOpen(true)} /><div className="connection-strip"><span className={apiOnline ? 'online-dot' : 'offline-dot'} /> {apiOnline ? 'Django + Supabase conectados' : 'API desconectada'} <span>·</span> Modo {SKIP_AUTH ? 'demo' : 'producción'}</div>{role === 'teacher' ? <TeacherDashboard apiBase={API_BASE} token={token} /> : <StudentDashboard user={user} token={token} apiBase={API_BASE} />}{profileOpen && <ProfilePanel user={user} progress={progress} onClose={() => setProfileOpen(false)} onLogout={handleLogout} onUpdateUser={handleProfileUpdate} />}
+  return <ClickSpark><div className="app-frame"><Navbar user={user} role={role} demoMode={SKIP_AUTH} onRoleChange={handleRoleChange} notifications={notifications} onLogout={handleLogout} onProfile={() => setProfileOpen(true)} /><div className="connection-strip"><span className={apiOnline ? 'online-dot' : 'offline-dot'} /> {apiOnline ? 'Django + Supabase conectados' : 'API desconectada'} <span>·</span> Modo {SKIP_AUTH ? 'demo' : 'producción'}</div>{role === 'teacher' ? <TeacherDashboard apiBase={API_BASE} token={token} /> : <StudentDashboard user={user} token={token} apiBase={API_BASE} />}{profileOpen && <ProfilePanel user={user} progress={progress} onClose={() => setProfileOpen(false)} onLogout={handleLogout} onUpdateUser={handleProfileUpdate} />}
     {showOnboarding && <OnboardingModal onFinish={() => setShowOnboarding(false)} />}
-    <EduEvalChatbot /></div>
+    <LiveTeacherStudentChat user={user} role={role} token={token} apiBase={API_BASE} demoMode={SKIP_AUTH} />
+    <EduEvalChatbot /></div></ClickSpark>
 }

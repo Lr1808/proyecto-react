@@ -12,6 +12,20 @@ const dispatchCelebration = (type, title, text) => window.dispatchEvent(new Cust
 
 const escapeHtml = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
+function validateCode(code, challenge) {
+  const source = code.trim()
+  const errors = []
+  if (!source) return { passed: false, errors: ['Escribe una solución antes de probarla.'] }
+  if (!/def\s+[a-zA-Z_]\w*\s*\([^)]*\)\s*:/m.test(source)) errors.push('Falta definir una función con def, nombre, paréntesis y dos puntos.')
+  if (!/\breturn\b/.test(source)) errors.push('La función debe devolver un resultado usando return.')
+  const pairs = [['(', ')'], ['[', ']'], ['{', '}']]
+  pairs.forEach(([opening, closing]) => { if ((source.match(new RegExp(`\\${opening}`, 'g')) || []).length !== (source.match(new RegExp(`\\${closing}`, 'g')) || []).length) errors.push(`Hay un paréntesis o símbolo ${opening}${closing} sin cerrar.`) })
+  if (challenge?.code_validator === 'sum' && !/[+]|sum\s*\(/.test(source)) errors.push('La solución debe sumar los dos valores recibidos.')
+  if (challenge?.code_validator === 'reverse' && !(/\[::-1\]/.test(source) || /reversed\s*\(/.test(source) || /reverse\s*\(/.test(source))) errors.push('Usa slicing [::-1], reversed() o reverse() para invertir el texto.')
+  if (challenge?.code_validator === 'max' && !(/max\s*\(/.test(source) || />|</.test(source))) errors.push('La solución debe comparar los valores o usar max().')
+  return { passed: errors.length === 0, errors }
+}
+
 function highlightPython(code) {
   const regex = /(#.*$)|('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")|\b(\d+\.?\d*)\b|\b(def|class|return|if|elif|else|for|while|import|from|as|lambda|in|not|and|or|True|False|None|pass|break|continue|try|except|finally|with|yield|global|nonlocal|print|range|len)\b|\b([A-Za-z_]\w*)(?=\s*\()/gm
   return code.split('\n').map((line) => {
@@ -105,6 +119,7 @@ export default function ExerciseSolverModal({ exercise, apiBase, token, onClose 
 
   const codeCases = useMemo(() => {
     const challenge = questions.find((question) => question.question_type === 'CODE_CHALLENGE')
+    if (challenge?.code_cases?.length) return challenge.code_cases.map((test, index) => ({ label: `Caso ${index + 1}`, expected: test.expected, input: test.input }))
     const real = challenge?.test_cases || []
     return real.length ? real.map((test, index) => ({ label: `Caso ${index + 1}${test.is_hidden ? ' oculto' : ''}`, expected: test.expected_output })) : [{ label: 'Caso 1', expected: '5' }, { label: 'Caso 2', expected: '15' }]
   }, [questions])
@@ -115,7 +130,12 @@ export default function ExerciseSolverModal({ exercise, apiBase, token, onClose 
     setConsoleOutput('Sandbox Judge0 iniciando…\nCompilando main.py…')
     window.setTimeout(() => {
       setRunning(false)
-      setConsoleOutput(`${codeCases.map((test) => `✓ ${test.label}${test.expected ? ` → ${test.expected}` : ''} · 42ms`).join('\n')}\n\nTodos los casos públicos pasaron. Judge0 validará también los casos ocultos.`)
+      const validation = validateCode(currentAnswer, activeQuestion)
+      if (!validation.passed) {
+        setConsoleOutput(`✗ La solución necesita cambios\n\n${validation.errors.map((error) => `• ${error}`).join('\n')}\n\nCorrige el código y vuelve a probar.`)
+        return
+      }
+      setConsoleOutput(`${codeCases.map((test) => `✓ ${test.label}${test.input ? ` (${test.input})` : ''}${test.expected ? ` → ${test.expected}` : ''} · 42ms`).join('\n')}\n\nTodo está bien escrito. Los casos públicos pasaron.`)
     }, 900)
   }
 
@@ -162,7 +182,7 @@ export default function ExerciseSolverModal({ exercise, apiBase, token, onClose 
         const feedback = questions.map((question) => {
           const answer = answers[question.id]
           const answered = answer !== undefined && answer !== ''
-          const correct = !answered ? false : (question.question_type === 'CODE_CHALLENGE' ? true : String(answer).trim().toLowerCase() === String(question.correct_answer ?? '').trim().toLowerCase())
+          const correct = !answered ? false : (question.question_type === 'CODE_CHALLENGE' ? validateCode(answer, question).passed : String(answer).trim().toLowerCase() === String(question.correct_answer ?? '').trim().toLowerCase())
           const hint = question.question_type === 'CODE_CHALLENGE' || question.correct_answer === undefined || question.correct_answer === '' ? '' : `La respuesta correcta es "${question.correct_answer}". `
           const explanation = correct ? (question.explanation || '¡Correcto!') : (hint + (question.explanation || 'Revisa la teoría y vuelve a intentarlo.'))
           return { question_id: question.id, is_correct: correct, score_awarded: correct ? Number(question.points || 10) : 0, explanation }

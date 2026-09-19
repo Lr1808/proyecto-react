@@ -13,7 +13,7 @@ def main():
     teacher, _ = User.objects.get_or_create(
         email="admin@example.com",
         defaults={
-            "full_name": "Admin Principal",
+            "full_name": "Luis",
             "role": User.Role.TEACHER,
             "is_staff": True,
             "is_superuser": True,

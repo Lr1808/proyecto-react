@@ -64,6 +64,8 @@ class SupabaseJWTAuthentication(authentication.BaseAuthentication):
 
         metadata = claims.get("user_metadata") or {}
         full_name = metadata.get("full_name") or metadata.get("name") or email.split("@", 1)[0]
+        requested_role = metadata.get("requested_role")
+        role = User.Role.TEACHER if requested_role == User.Role.TEACHER else User.Role.STUDENT
         user = User.objects.filter(supabase_uid=supabase_uid).first()
         if user is None:
             user = User.objects.filter(email=email).first()
@@ -73,7 +75,7 @@ class SupabaseJWTAuthentication(authentication.BaseAuthentication):
                 email=email,
                 supabase_uid=supabase_uid,
                 full_name=full_name,
-                role=User.Role.STUDENT,
+                role=role,
             )
         elif user.supabase_uid != supabase_uid:
             user.supabase_uid = supabase_uid
@@ -90,6 +92,9 @@ class SupabaseJWTAuthentication(authentication.BaseAuthentication):
         if user.full_name != full_name:
             user.full_name = full_name
             changed_fields.append("full_name")
+        if requested_role in {User.Role.TEACHER, User.Role.STUDENT} and user.role != requested_role:
+            user.role = requested_role
+            changed_fields.append("role")
         if changed_fields:
             user.save(update_fields=changed_fields)
         return user

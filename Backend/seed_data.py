@@ -232,9 +232,9 @@ EXERCISES.extend([
 
 
 def main():
-    teacher, _ = User.objects.get_or_create(email="admin@example.com", defaults={"full_name": "Admin Principal", "role": User.Role.TEACHER})
+    teacher, _ = User.objects.get_or_create(email="admin@example.com", defaults={"full_name": "Luis", "role": User.Role.TEACHER})
     teacher.role = User.Role.TEACHER
-    teacher.full_name = "Admin Principal"
+    teacher.full_name = "Luis"
     teacher.is_staff = True
     teacher.is_superuser = True
     teacher.set_password("Admin1234!")

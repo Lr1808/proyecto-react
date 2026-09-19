@@ -6,6 +6,7 @@ from api.routers.submissions import exercise_draft, exercise_submissions, submit
 from api.routers.courses import assignments, courses, join_course
 from api.routers.dashboard import teacher_metrics
 from api.routers.progress import student_attempts, student_progress
+from api.routers.chat import chat_contacts, chat_messages
 from .views import health
 
 urlpatterns = [
@@ -23,4 +24,7 @@ urlpatterns = [
     path("teacher/metrics/", teacher_metrics, name="teacher-metrics"),
     path("student/progress/", student_progress, name="student-progress"),
     path("student/attempts/", student_attempts, name="student-attempts"),
+    path("chat/messages/", chat_messages, name="chat-messages"),
+    path("chat/contacts/", chat_contacts, name="chat-contacts"),
 ]
+
